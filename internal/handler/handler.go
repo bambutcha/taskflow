@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/gorilla/mux"
 	"github.com/bambutcha/taskflow/internal/service"
 )
 
@@ -27,11 +28,6 @@ type ErrorResponse struct {
 }
 
 func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		h.writeError(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
 	var req CreateTaskRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
@@ -60,12 +56,9 @@ func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *TaskHandler) GetTask(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		h.writeError(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
+	vars := mux.Vars(r)
+	taskID := vars["id"]
 
-	taskID := h.extractTaskID(r.URL.Path)
 	if taskID == "" {
 		h.writeError(w, "Task ID is required", http.StatusBadRequest)
 		return
@@ -87,12 +80,9 @@ func (h *TaskHandler) GetTask(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *TaskHandler) DeleteTask(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodDelete {
-		h.writeError(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
+	vars := mux.Vars(r)
+	taskID := vars["id"]
 
-	taskID := h.extractTaskID(r.URL.Path)
 	if taskID == "" {
 		h.writeError(w, "Task ID is required", http.StatusBadRequest)
 		return
@@ -111,13 +101,6 @@ func (h *TaskHandler) DeleteTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
-}
-
-func (h *TaskHandler) extractTaskID(path string) string {
-	if strings.HasPrefix(path, "/tasks/") {
-		return strings.TrimPrefix(path, "/tasks/")
-	}
-	return ""
 }
 
 func (h *TaskHandler) writeError(w http.ResponseWriter, message string, statusCode int) {

@@ -1,6 +1,7 @@
 package service
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -10,7 +11,7 @@ import (
 
 func TestTaskManager_CreateTask(t *testing.T) {
 	repo := repository.NewMemoryRepository()
-	manager := NewTaskManager(repo, 2)
+	manager := NewTaskManagerForTesting(repo, 2)
 
 	task, err := manager.CreateTask("test-1")
 	if err != nil {
@@ -25,7 +26,6 @@ func TestTaskManager_CreateTask(t *testing.T) {
 		t.Errorf("CreateTask() Status = %v, want %v", task.Status, model.StatusPending)
 	}
 
-	// Проверяем, что задача сохранилась в репозитории
 	savedTask, err := manager.GetTask("test-1")
 	if err != nil {
 		t.Errorf("GetTask() error = %v, want nil", err)
@@ -38,15 +38,13 @@ func TestTaskManager_CreateTask(t *testing.T) {
 
 func TestTaskManager_CreateTask_Duplicate(t *testing.T) {
 	repo := repository.NewMemoryRepository()
-	manager := NewTaskManager(repo, 2)
+	manager := NewTaskManagerForTesting(repo, 2)
 
-	// Создаем первую задачу
 	_, err := manager.CreateTask("test-1")
 	if err != nil {
 		t.Errorf("First CreateTask() error = %v, want nil", err)
 	}
 
-	// Пытаемся создать дубликат
 	_, err = manager.CreateTask("test-1")
 	if err == nil {
 		t.Error("Second CreateTask() error = nil, want error")
@@ -55,21 +53,18 @@ func TestTaskManager_CreateTask_Duplicate(t *testing.T) {
 
 func TestTaskManager_DeleteTask(t *testing.T) {
 	repo := repository.NewMemoryRepository()
-	manager := NewTaskManager(repo, 2)
+	manager := NewTaskManagerForTesting(repo, 0)
 
-	// Создаем задачу
 	_, err := manager.CreateTask("test-1")
 	if err != nil {
 		t.Errorf("CreateTask() error = %v, want nil", err)
 	}
 
-	// Удаляем задачу (пока она в статусе pending)
 	err = manager.DeleteTask("test-1")
 	if err != nil {
 		t.Errorf("DeleteTask() error = %v, want nil", err)
 	}
 
-	// Проверяем, что задача удалилась
 	_, err = manager.GetTask("test-1")
 	if err == nil {
 		t.Error("GetTask() after delete error = nil, want error")
@@ -78,7 +73,7 @@ func TestTaskManager_DeleteTask(t *testing.T) {
 
 func TestTaskManager_DeleteTask_NotFound(t *testing.T) {
 	repo := repository.NewMemoryRepository()
-	manager := NewTaskManager(repo, 2)
+	manager := NewTaskManagerForTesting(repo, 2)
 
 	err := manager.DeleteTask("non-existent")
 	if err == nil {
@@ -87,28 +82,30 @@ func TestTaskManager_DeleteTask_NotFound(t *testing.T) {
 }
 
 func TestTaskManager_TaskExecution(t *testing.T) {
-	// Этот тест проверяет, что задачи действительно выполняются
-	// но делаем время выполнения короче для быстрого тестирования
 	repo := repository.NewMemoryRepository()
-	manager := NewTaskManager(repo, 1)
+	manager := NewTaskManagerForTesting(repo, 1)
 
 	_, err := manager.CreateTask("test-execution")
 	if err != nil {
 		t.Errorf("CreateTask() error = %v, want nil", err)
 	}
 
-	// Ждем немного, чтобы воркер успел подхватить задачу
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(200 * time.Millisecond)
 
-	// Проверяем, что статус изменился с pending
 	updatedTask, err := manager.GetTask("test-execution")
 	if err != nil {
 		t.Errorf("GetTask() error = %v, want nil", err)
 	}
 
-	// Задача должна быть либо в статусе running, либо уже completed
-	// (в зависимости от того, насколько быстро выполнится)
-	if updatedTask.Status == model.StatusPending {
-		t.Errorf("Task status is still pending, expected it to be picked up by worker")
+	if updatedTask.Status != model.StatusCompleted {
+		t.Errorf("Task status = %v, want %v", updatedTask.Status, model.StatusCompleted)
+	}
+
+	if updatedTask.Result == "" {
+		t.Error("Task result is empty, expected some result")
+	}
+
+	if !strings.Contains(updatedTask.Result, "completed by worker") {
+		t.Errorf("Task result doesn't contain expected text: %s", updatedTask.Result)
 	}
 }
