@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/gorilla/mux"
+	"github.com/sirupsen/logrus"
 	"github.com/bambutcha/taskflow/internal/model"
 	"github.com/bambutcha/taskflow/internal/repository"
 	"github.com/bambutcha/taskflow/internal/service"
@@ -16,13 +17,17 @@ import (
 func setupTestHandler() *TaskHandler {
 	repo := repository.NewMemoryRepository()
 	manager := service.NewTaskManagerForTesting(repo, 2)
-	return NewTaskHandler(manager)
+	handler := NewTaskHandler(manager)
+	handler.logger.SetLevel(logrus.PanicLevel)
+	return handler
 }
 
 func setupTestHandlerNoWorkers() *TaskHandler {
 	repo := repository.NewMemoryRepository()
 	manager := service.NewTaskManagerForTesting(repo, 0)
-	return NewTaskHandler(manager)
+	handler := NewTaskHandler(manager)
+	handler.logger.SetLevel(logrus.PanicLevel)
+	return handler
 }
 
 func TestTaskHandler_CreateTask(t *testing.T) {

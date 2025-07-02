@@ -6,16 +6,22 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
+	"github.com/sirupsen/logrus"
 	"github.com/bambutcha/taskflow/internal/service"
 )
 
 type TaskHandler struct {
 	taskManager *service.TaskManager
+	logger      *logrus.Logger
 }
 
 func NewTaskHandler(taskManager *service.TaskManager) *TaskHandler {
+	logger := logrus.New()
+	logger.SetFormatter(&logrus.JSONFormatter{})
+	
 	return &TaskHandler{
 		taskManager: taskManager,
+		logger:      logger,
 	}
 }
 
@@ -31,11 +37,13 @@ func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 	var req CreateTaskRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
+		h.logger.WithField("error", err.Error()).Warn("Invalid JSON in create task request")
 		h.writeError(w, "Invalid JSON", http.StatusBadRequest)
 		return
 	}
 
 	if req.ID == "" {
+		h.logger.Warn("Empty task ID in create request")
 		h.writeError(w, "Task ID is required", http.StatusBadRequest)
 		return
 	}
@@ -60,6 +68,7 @@ func (h *TaskHandler) GetTask(w http.ResponseWriter, r *http.Request) {
 	taskID := vars["id"]
 
 	if taskID == "" {
+		h.logger.Warn("Empty task ID in get request")
 		h.writeError(w, "Task ID is required", http.StatusBadRequest)
 		return
 	}
@@ -84,6 +93,7 @@ func (h *TaskHandler) DeleteTask(w http.ResponseWriter, r *http.Request) {
 	taskID := vars["id"]
 
 	if taskID == "" {
+		h.logger.Warn("Empty task ID in delete request")
 		h.writeError(w, "Task ID is required", http.StatusBadRequest)
 		return
 	}
@@ -104,6 +114,11 @@ func (h *TaskHandler) DeleteTask(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *TaskHandler) writeError(w http.ResponseWriter, message string, statusCode int) {
+	h.logger.WithFields(logrus.Fields{
+		"status_code": statusCode,
+		"message":     message,
+	}).Warn("Sending error response")
+	
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 	
