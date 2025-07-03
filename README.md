@@ -1,5 +1,8 @@
 # Taskflow API
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/bambutcha/taskflow)](https://goreportcard.com/report/github.com/bambutcha/taskflow) 
+[![License](https://img.shields.io/github/license/bambutcha/taskflow)](https://github.com/bambutcha/taskflow/blob/master/LICENSE)
+
 HTTP API сервис на Go для управления долгосрочными задачами (3-5 минут выполнения).
 
 ## 📋 Описание
@@ -330,7 +333,7 @@ health_check:
 
 ## 📄 Лицензия
 
-(MIT LICENSE)[https://github.com/bambutcha/taskflow/blob/master/LICENSE]
+[MIT LICENSE](https://github.com/bambutcha/taskflow/blob/master/LICENSE)
 
 ## 🤝 Contributing
 
