@@ -330,7 +330,7 @@ health_check:
 
 ## 📄 Лицензия
 
- License
+(MIT LICENSE)[https://github.com/bambutcha/taskflow/blob/master/LICENSE]
 
 ## 🤝 Contributing
 
