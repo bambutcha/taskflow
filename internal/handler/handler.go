@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/bambutcha/taskflow/internal/service"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
-	"github.com/bambutcha/taskflow/internal/service"
 )
 
 type TaskHandler struct {
@@ -18,7 +18,7 @@ type TaskHandler struct {
 func NewTaskHandler(taskManager *service.TaskManager) *TaskHandler {
 	logger := logrus.New()
 	logger.SetFormatter(&logrus.JSONFormatter{})
-	
+
 	return &TaskHandler{
 		taskManager: taskManager,
 		logger:      logger,
@@ -118,10 +118,10 @@ func (h *TaskHandler) writeError(w http.ResponseWriter, message string, statusCo
 		"status_code": statusCode,
 		"message":     message,
 	}).Warn("Sending error response")
-	
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
-	
+
 	errorResp := ErrorResponse{Error: message}
 	json.NewEncoder(w).Encode(errorResp)
 }

@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"github.com/bambutcha/taskflow/internal/service"
+	"github.com/sirupsen/logrus"
 )
 
 type HealthHandler struct {
@@ -18,7 +18,7 @@ type HealthHandler struct {
 func NewHealthHandler(taskManager *service.TaskManager) *HealthHandler {
 	logger := logrus.New()
 	logger.SetFormatter(&logrus.JSONFormatter{})
-	
+
 	return &HealthHandler{
 		taskManager: taskManager,
 		logger:      logger,
@@ -37,21 +37,21 @@ type HealthResponse struct {
 }
 
 type HealthMetrics struct {
-	ActiveWorkers int `json:"active_workers"`
-	TotalTasks    int `json:"total_tasks"`
-	PendingTasks  int `json:"pending_tasks"`
-	RunningTasks  int `json:"running_tasks"`
+	ActiveWorkers  int `json:"active_workers"`
+	TotalTasks     int `json:"total_tasks"`
+	PendingTasks   int `json:"pending_tasks"`
+	RunningTasks   int `json:"running_tasks"`
 	CompletedTasks int `json:"completed_tasks"`
-	FailedTasks   int `json:"failed_tasks"`
+	FailedTasks    int `json:"failed_tasks"`
 }
 
 func (h *HealthHandler) Health(w http.ResponseWriter, r *http.Request) {
 	h.logger.Debug("Processing health check request")
-	
+
 	uptime := time.Since(h.startTime)
 	metrics := h.collectMetrics()
 	checks := h.performChecks()
-	
+
 	status := "healthy"
 	for _, checkStatus := range checks {
 		if checkStatus != "ok" {
@@ -59,7 +59,7 @@ func (h *HealthHandler) Health(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 	}
-	
+
 	response := HealthResponse{
 		Status:    status,
 		Timestamp: time.Now(),
@@ -69,16 +69,16 @@ func (h *HealthHandler) Health(w http.ResponseWriter, r *http.Request) {
 		Metrics:   metrics,
 		Checks:    checks,
 	}
-	
+
 	statusCode := http.StatusOK
 	if status == "unhealthy" {
 		statusCode = http.StatusServiceUnavailable
 	}
-	
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 	json.NewEncoder(w).Encode(response)
-	
+
 	h.logger.WithFields(logrus.Fields{
 		"status":        status,
 		"uptime":        uptime.String(),
@@ -95,9 +95,9 @@ func (h *HealthHandler) collectMetrics() HealthMetrics {
 			ActiveWorkers: h.taskManager.GetWorkerCount(),
 		}
 	}
-	
+
 	var pending, running, completed, failed int
-	
+
 	for _, task := range tasks {
 		switch task.Status {
 		case "pending":
@@ -110,7 +110,7 @@ func (h *HealthHandler) collectMetrics() HealthMetrics {
 			failed++
 		}
 	}
-	
+
 	return HealthMetrics{
 		ActiveWorkers:  h.taskManager.GetWorkerCount(),
 		TotalTasks:     len(tasks),
@@ -123,19 +123,19 @@ func (h *HealthHandler) collectMetrics() HealthMetrics {
 
 func (h *HealthHandler) performChecks() map[string]string {
 	checks := make(map[string]string)
-	
+
 	checks["workers"] = "ok"
 	if h.taskManager.GetWorkerCount() == 0 {
 		checks["workers"] = "no_workers"
 	}
-	
+
 	checks["memory"] = "ok"
-	
+
 	checks["storage"] = "ok"
 	_, err := h.taskManager.GetAllTasks()
 	if err != nil {
 		checks["storage"] = "error"
 	}
-	
+
 	return checks
 }

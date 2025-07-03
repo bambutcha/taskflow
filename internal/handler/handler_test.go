@@ -7,11 +7,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/gorilla/mux"
-	"github.com/sirupsen/logrus"
 	"github.com/bambutcha/taskflow/internal/model"
 	"github.com/bambutcha/taskflow/internal/repository"
 	"github.com/bambutcha/taskflow/internal/service"
+	"github.com/gorilla/mux"
+	"github.com/sirupsen/logrus"
 )
 
 func setupTestHandler() *TaskHandler {

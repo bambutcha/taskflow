@@ -6,9 +6,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/sirupsen/logrus"
 	"github.com/bambutcha/taskflow/internal/repository"
 	"github.com/bambutcha/taskflow/internal/service"
+	"github.com/sirupsen/logrus"
 )
 
 func setupTestHealthHandler() *HealthHandler {

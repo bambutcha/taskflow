@@ -5,9 +5,9 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"github.com/bambutcha/taskflow/internal/model"
 	"github.com/bambutcha/taskflow/internal/repository"
+	"github.com/sirupsen/logrus"
 )
 
 type TaskManager struct {
@@ -21,7 +21,7 @@ type TaskManager struct {
 func NewTaskManager(repo repository.TaskRepository, workers int) *TaskManager {
 	logger := logrus.New()
 	logger.SetFormatter(&logrus.JSONFormatter{})
-	
+
 	manager := &TaskManager{
 		repo:       repo,
 		workerPool: make(chan *model.Task, workers*2),
@@ -38,7 +38,7 @@ func NewTaskManager(repo repository.TaskRepository, workers int) *TaskManager {
 func NewTaskManagerForTesting(repo repository.TaskRepository, workers int) *TaskManager {
 	logger := logrus.New()
 	logger.SetLevel(logrus.WarnLevel)
-	
+
 	manager := &TaskManager{
 		repo:       repo,
 		workerPool: make(chan *model.Task, workers*2),
@@ -53,7 +53,7 @@ func NewTaskManagerForTesting(repo repository.TaskRepository, workers int) *Task
 
 func (tm *TaskManager) CreateTask(id string) (*model.Task, error) {
 	tm.logger.WithField("task_id", id).Info("Creating task")
-	
+
 	task := model.NewTask(id)
 
 	err := tm.repo.Create(task)
@@ -78,7 +78,7 @@ func (tm *TaskManager) CreateTask(id string) (*model.Task, error) {
 
 func (tm *TaskManager) GetTask(id string) (*model.Task, error) {
 	tm.logger.WithField("task_id", id).Debug("Getting task")
-	
+
 	task, err := tm.repo.GetByID(id)
 	if err != nil {
 		tm.logger.WithFields(logrus.Fields{
@@ -87,13 +87,13 @@ func (tm *TaskManager) GetTask(id string) (*model.Task, error) {
 		}).Warn("Task not found")
 		return nil, err
 	}
-	
+
 	return task, nil
 }
 
 func (tm *TaskManager) DeleteTask(id string) error {
 	tm.logger.WithField("task_id", id).Info("Deleting task")
-	
+
 	task, err := tm.repo.GetByID(id)
 	if err != nil {
 		tm.logger.WithFields(logrus.Fields{
@@ -126,13 +126,13 @@ func (tm *TaskManager) DeleteTask(id string) error {
 
 func (tm *TaskManager) GetAllTasks() ([]*model.Task, error) {
 	tm.logger.Debug("Getting all tasks")
-	
+
 	tasks, err := tm.repo.GetAll()
 	if err != nil {
 		tm.logger.WithField("error", err.Error()).Error("Failed to get all tasks")
 		return nil, err
 	}
-	
+
 	tm.logger.WithField("count", len(tasks)).Debug("Retrieved all tasks")
 	return tasks, nil
 }
@@ -149,11 +149,11 @@ func (tm *TaskManager) startWorkers() {
 
 func (tm *TaskManager) worker(workerID int) {
 	tm.logger.WithField("worker_id", workerID).Info("Worker started")
-	
+
 	for task := range tm.workerPool {
 		tm.executeTask(task, workerID)
 	}
-	
+
 	tm.logger.WithField("worker_id", workerID).Info("Worker stopped")
 }
 
@@ -162,9 +162,9 @@ func (tm *TaskManager) executeTask(task *model.Task, workerID int) {
 		"task_id":   task.ID,
 		"worker_id": workerID,
 	})
-	
+
 	logger.Info("Starting task execution")
-	
+
 	now := time.Now()
 	task.Status = model.StatusRunning
 	task.StartedAt = &now

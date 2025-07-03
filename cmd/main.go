@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -18,17 +19,24 @@ import (
 )
 
 func main() {
+	config := loadConfig()
+
 	log := logrus.New()
 	log.SetFormatter(&logrus.JSONFormatter{})
+
+	if level, err := logrus.ParseLevel(config.LogLevel); err == nil {
+		log.SetLevel(level)
+	}
+
 	log.Info("Taskflow API starting...")
 
 	repo := repository.NewMemoryRepository()
-	taskManager := service.NewTaskManager(repo, 3)
+	taskManager := service.NewTaskManager(repo, config.Workers)
 	taskHandler := handler.NewTaskHandler(taskManager)
 	healthHandler := handler.NewHealthHandler(taskManager)
 
 	r := mux.NewRouter()
-	
+
 	r.HandleFunc("/", homeHandler).Methods("GET")
 	r.HandleFunc("/health", healthHandler.Health).Methods("GET")
 	r.HandleFunc("/tasks", taskHandler.CreateTask).Methods("POST")
@@ -43,7 +51,7 @@ func main() {
 	loggedHandler := handlers.LoggingHandler(os.Stdout, corsHandler)
 
 	srv := &http.Server{
-		Addr:         ":8080",
+		Addr:         ":" + config.Port,
 		Handler:      loggedHandler,
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
@@ -51,7 +59,7 @@ func main() {
 	}
 
 	go func() {
-		log.Info("Server starting on :8080")
+		log.WithField("port", config.Port).Info("Server starting")
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("Server failed to start: %v", err)
 		}
@@ -70,6 +78,36 @@ func main() {
 	}
 
 	log.Info("Server exited")
+}
+
+type Config struct {
+	Port     string
+	Workers  int
+	LogLevel string
+}
+
+func loadConfig() Config {
+	port := getEnv("PORT", "8080")
+	workersStr := getEnv("WORKERS", "3")
+	logLevel := getEnv("LOG_LEVEL", "info")
+
+	workers, err := strconv.Atoi(workersStr)
+	if err != nil {
+		workers = 3
+	}
+
+	return Config{
+		Port:     port,
+		Workers:  workers,
+		LogLevel: logLevel,
+	}
+}
+
+func getEnv(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
 }
 
 func homeHandler(w http.ResponseWriter, r *http.Request) {
