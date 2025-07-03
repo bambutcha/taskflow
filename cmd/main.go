@@ -25,10 +25,12 @@ func main() {
 	repo := repository.NewMemoryRepository()
 	taskManager := service.NewTaskManager(repo, 3)
 	taskHandler := handler.NewTaskHandler(taskManager)
+	healthHandler := handler.NewHealthHandler(taskManager)
 
 	r := mux.NewRouter()
 	
 	r.HandleFunc("/", homeHandler).Methods("GET")
+	r.HandleFunc("/health", healthHandler.Health).Methods("GET")
 	r.HandleFunc("/tasks", taskHandler.CreateTask).Methods("POST")
 	r.HandleFunc("/tasks/{id}", taskHandler.GetTask).Methods("GET")
 	r.HandleFunc("/tasks/{id}", taskHandler.DeleteTask).Methods("DELETE")

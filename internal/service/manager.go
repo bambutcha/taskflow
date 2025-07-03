@@ -137,6 +137,10 @@ func (tm *TaskManager) GetAllTasks() ([]*model.Task, error) {
 	return tasks, nil
 }
 
+func (tm *TaskManager) GetWorkerCount() int {
+	return tm.workers
+}
+
 func (tm *TaskManager) startWorkers() {
 	for i := 0; i < tm.workers; i++ {
 		go tm.worker(i + 1)
